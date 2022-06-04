@@ -149,7 +149,7 @@ defmodule Tortoise.Handler do
       end
 
       @impl true
-      def handle_message(_topic, _payload, state) do
+      def handle_message(_topic, _payload, _retained, state) do
         {:ok, state}
       end
 
@@ -292,12 +292,13 @@ defmodule Tortoise.Handler do
   a list of next actions such as `{:unsubscribe, "foo/bar"}` will
   reenter the loop and perform the listed actions.
   """
-  @callback handle_message(topic_levels, payload, state :: term()) ::
+  @callback handle_message(topic_levels, payload, retained, state :: term()) ::
               {:ok, new_state}
               | {:ok, new_state, [next_action()]}
             when new_state: term(),
                  topic_levels: [String.t()],
-                 payload: Tortoise.payload()
+                 payload: Tortoise.payload(),
+                 retained: boolean()
 
   @doc """
   Invoked when the connection process is about to exit.
@@ -345,7 +346,7 @@ defmodule Tortoise.Handler do
     topic_list = String.split(publish.topic, "/")
 
     handler.module
-    |> apply(:handle_message, [topic_list, publish.payload, handler.state])
+    |> apply(:handle_message, [topic_list, publish.payload, publish.retain, handler.state])
     |> handle_result(handler)
   end
 
